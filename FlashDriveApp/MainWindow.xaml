@@ -1,0 +1,32 @@
+﻿<Window x:Class="FlashDriveApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Flash Drive Copier" Height="500" Width="525">
+    <Window.Resources>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="LightGray"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="White"/>
+        </Style>
+    </Window.Resources>
+    <StackPanel Background="Blue">
+        <Label Foreground="White">Drive Name:</Label>
+        <TextBox x:Name="DriveNameTextBox" />
+        <Label Foreground="White">Flash Drives:</Label>
+        <Border BorderBrush="Black" BorderThickness="1">
+            <ListBox x:Name="FlashDriveList" Height="200"/>
+        </Border>
+        <Button x:Name="RefreshButton" Click="RefreshButton_Click">Refresh Drives</Button>
+        <Label Foreground="White">Format Options:</Label>
+        <ComboBox x:Name="FormatOptionsComboBox" />
+        <Label Foreground="White">Source Folder:</Label>
+        <Border BorderBrush="Black" BorderThickness="1">
+            <TextBox x:Name="SourceFolderTextBox" IsReadOnly="True"/>
+        </Border>
+        <Button x:Name="SelectFolderButton" Click="SelectFolderButton_Click">Select Source Folder</Button>
+        <Button x:Name="CopyFilesButton" Click="CopyFilesButton_Click">Copy Files to Selected Drives</Button>
+    </StackPanel>
+</Window>
+
