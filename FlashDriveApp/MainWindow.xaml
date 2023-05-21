@@ -1,32 +1,50 @@
 ﻿<Window x:Class="FlashDriveApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Flash Drive Copier" Height="500" Width="525">
+        Title="Flash Drive Copier" Height="800" Width="525"
+        Background="#F2F2F2">
     <Window.Resources>
         <Style TargetType="{x:Type Button}">
-            <Setter Property="Background" Value="LightGray"/>
+            <Setter Property="Background" Value="#0078D7"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+        </Style>
+        <Style TargetType="{x:Type Label}">
             <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="FontSize" Value="15"/>
         </Style>
         <Style TargetType="{x:Type Border}">
             <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="Margin" Value="10"/>
+        </Style>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Margin" Value="7"/>
         </Style>
     </Window.Resources>
-    <StackPanel Background="Blue">
-        <Label Foreground="White">Drive Name:</Label>
+    <StackPanel>
+        <Label>Drive Name:</Label>
         <TextBox x:Name="DriveNameTextBox" />
-        <Label Foreground="White">Flash Drives:</Label>
-        <Border BorderBrush="Black" BorderThickness="1">
+        <Label>Flash Drives:</Label>
+        <Border>
+            <CheckBox x:Name="SelectAllCheckBox" Content="Select All" Click="SelectAllCheckBox_Click"/>
+        </Border>
+        <Border>
             <ListBox x:Name="FlashDriveList" Height="200"/>
         </Border>
+
         <Button x:Name="RefreshButton" Click="RefreshButton_Click">Refresh Drives</Button>
-        <Label Foreground="White">Format Options:</Label>
-        <ComboBox x:Name="FormatOptionsComboBox" />
-        <Label Foreground="White">Source Folder:</Label>
-        <Border BorderBrush="Black" BorderThickness="1">
-            <TextBox x:Name="SourceFolderTextBox" IsReadOnly="True"/>
-        </Border>
+        <Label>Format Options:</Label>
+        <ComboBox x:Name="FormatOptionsComboBox" Margin="10" />
+        <Label>Source Folder:</Label>
+        <TextBox x:Name="SourceFolderTextBox" IsReadOnly="True"/>
         <Button x:Name="SelectFolderButton" Click="SelectFolderButton_Click">Select Source Folder</Button>
         <Button x:Name="CopyFilesButton" Click="CopyFilesButton_Click">Copy Files to Selected Drives</Button>
+        <CheckBox x:Name="VerifyCheckBox" Content="Verify (Warning: this could take a long time!)" Margin="10"/>
     </StackPanel>
 </Window>
-

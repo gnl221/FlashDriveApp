@@ -1,16 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+// using System.Linq;
 using System.Runtime.InteropServices;
+// using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
+using System.Security.Cryptography;
+using System.Text;
+// using System.Windows.Forms;
 
 namespace FlashDriveApp;
 
 public partial class MainWindow
 {
+    private Dictionary<string, string> transferTimes = new Dictionary<string, string>();
     public MainWindow()
     {
         InitializeComponent();
@@ -48,13 +56,41 @@ public partial class MainWindow
         FlashDriveList.Items.Clear();
         foreach (DriveInfo drive in DriveInfo.GetDrives())
         {
-            if (drive.DriveType == DriveType.Removable)
+            try
             {
-                FlashDriveList.Items.Add(new CheckBox
-                    { Content = $"{drive.Name} ({drive.VolumeLabel}, {drive.TotalSize / (1024 * 1024 * 1024)} GB)" });
+                if (drive.DriveType == DriveType.Removable)
+                {
+                    FlashDriveList.Items.Add(new CheckBox
+                    {
+                        Content = $"{drive.Name} ({drive.VolumeLabel}, {drive.TotalSize / (1024 * 1024 * 1024)} GB)"
+                    });
+                }
+            }
+            catch (IOException)
+            {
+                // Drive is not ready, ignore it
             }
         }
     }
+
+    // private string CalculateMd5(string directory)
+    // {
+    //     using var md5 = MD5.Create();
+    //     var files = Directory.GetFiles(directory, "*.*", SearchOption.AllDirectories).OrderBy(p => p).ToList();
+    //
+    //     StringBuilder hash = new StringBuilder();
+    //
+    //     foreach (var file in files)
+    //     {
+    //         byte[] contentBytes = File.ReadAllBytes(file);
+    //         byte[] hashBytes = md5.ComputeHash(contentBytes);
+    //
+    //         foreach (var b in hashBytes)
+    //             hash.Append(b.ToString("x2"));
+    //     }
+    //
+    //     return hash.ToString();
+    // }
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
@@ -76,25 +112,107 @@ public partial class MainWindow
             SourceFolderTextBox.Text = Path.GetDirectoryName(dialog.FileName);
         }
     }
-
-    private void CopyFilesButton_Click(object sender, RoutedEventArgs e)
+    
+    
+    
+    private void SelectAllCheckBox_Click(object sender, RoutedEventArgs e)
     {
+        bool selectAll = this.SelectAllCheckBox.IsChecked == true;
+
         foreach (CheckBox checkBox in FlashDriveList.Items)
         {
-            if (checkBox.IsChecked != true) continue;
-            var driveLetter = checkBox.Content.ToString()?[..2];
-            if (driveLetter == null) continue;
-            FormatDrive(driveLetter, FormatOptionsComboBox.Text, DriveNameTextBox.Text);
-            CopyFiles(SourceFolderTextBox.Text, driveLetter);
-            EjectDrive(driveLetter);
+            checkBox.IsChecked = selectAll;
         }
     }
+
+    private string ComputeMd5(string directoryPath)
+    {
+        // Create a new instance of the MD5CryptoServiceProvider object
+        using (var md5 = MD5.Create())
+        {
+            // Convert the input directoryPath to a byte array and compute the hash
+            byte[] data = md5.ComputeHash(Encoding.UTF8.GetBytes(directoryPath));
+
+            // Create a new StringBuilder to collect the bytes and create a string
+            var sBuilder = new StringBuilder();
+
+            // Loop through each byte of the hashed data and format each one as a hexadecimal string
+            for (int i = 0; i < data.Length; i++)
+            {
+                sBuilder.Append(data[i].ToString("x2"));
+            }
+
+            // Return the hexadecimal string
+            return sBuilder.ToString();
+        }
+    }
+
+private void CopyFilesButton_Click(object sender, RoutedEventArgs e)
+{
+    var formatOption = FormatOptionsComboBox.Dispatcher.Invoke(() => FormatOptionsComboBox.Text);
+    var sourceFolder = SourceFolderTextBox.Dispatcher.Invoke(() => SourceFolderTextBox.Text);
+    var driveName = DriveNameTextBox.Dispatcher.Invoke(() => DriveNameTextBox.Text);
+    var verifyEnabled = VerifyCheckBox.Dispatcher.Invoke(() => VerifyCheckBox.IsChecked == true);
+    var tasks = new List<Task>();
+
+    foreach (CheckBox checkBox in FlashDriveList.Items)
+    {
+        tasks.Add(Task.Run(() =>
+        {
+            string? driveLetter = null;
+
+            try
+            {
+                if (checkBox.Dispatcher.Invoke(() => checkBox.IsChecked == true))
+                {
+                    driveLetter = checkBox.Dispatcher.Invoke(() => checkBox.Content.ToString()?[..2]);
+                    if (driveLetter != null)
+                    {
+                        FormatDrive(driveLetter, formatOption, driveName);
+                        CopyFiles(sourceFolder, driveLetter);
+                        if (verifyEnabled)
+                        {
+                            var sourceMd5 = ComputeMd5(sourceFolder);
+                            var targetMd5 = ComputeMd5(driveLetter);
+                            if (sourceMd5 != targetMd5)
+                            {
+                                throw new Exception("MD5 checksum failed.");
+                            }
+                        }
+                        EjectDrive(driveLetter);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error: {ex.Message}");
+                if (driveLetter != null)
+                {
+                    FormatDrive(driveLetter, formatOption, "Error");
+                }
+            }
+        }));
+    }
+
+    Task.WhenAll(tasks).ContinueWith(t =>
+    {
+        // If you are running this on a background thread, as you are doing here,
+        // you will need to marshal the call to the UI thread
+        this.Dispatcher.Invoke(() =>
+        {
+            MessageBox.Show("All file transfers are complete.", "Operation Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+        });
+    });
+}
 
     // The rest of the methods remain the same as before
     private void FormatDrive(string driveLetter, string fileSystem, string newLabel)
     {
-        // Change the cursor to a wait cursor
-        Mouse.OverrideCursor = Cursors.Wait;
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            // Change the cursor to a wait cursor
+            Mouse.OverrideCursor = Cursors.Wait;
+        });
 
         try
         {
@@ -112,10 +230,14 @@ public partial class MainWindow
         }
         finally
         {
-            // Restore the cursor
-            Mouse.OverrideCursor = null;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                // Restore the cursor
+                Mouse.OverrideCursor = null;
+            });
         }
     }
+
 
     private void CopyFiles(string sourcePath, string driveLetter)
     {
