@@ -37,7 +37,7 @@ public partial class MainWindow
 
     private const int FileShareRead = 1;
     private const int FileShareWrite = 2;
-    private const int OpenExisting = 3;
+    // private const int OpenExisting = 3;
     private const int FileAttributeNormal = 128;
     private const int FileFlagBackupSemantics = 33554432;
     private const int InvalidHandleValue = -1;
@@ -63,11 +63,13 @@ public partial class MainWindow
 
     private void SelectFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog();
-        dialog.ValidateNames = false;
-        dialog.CheckFileExists = false;
-        dialog.CheckPathExists = true;
-        dialog.FileName = "Folder Selection.";
+        var dialog = new OpenFileDialog
+        {
+            ValidateNames = false,
+            CheckFileExists = false,
+            CheckPathExists = true,
+            FileName = "Folder Selection."
+        };
 
         if (dialog.ShowDialog() == true)
         {
@@ -104,9 +106,9 @@ public partial class MainWindow
                 CreateNoWindow = true
             };
             var p = Process.Start(psi);
-            p.StandardInput.WriteLine($"echo Y | format {driveLetter} /FS:{fileSystem} /V:{newLabel} /Q");
-            p.StandardInput.Close();
-            p.WaitForExit();
+            p?.StandardInput.WriteLine($"echo Y | format {driveLetter} /FS:{fileSystem} /V:{newLabel} /Q");
+            p?.StandardInput.Close();
+            p?.WaitForExit();
         }
         finally
         {
@@ -156,6 +158,7 @@ public partial class MainWindow
         var path = @"\\.\" + driveLetter[0] + ":";
         var handle = CreateFile(path, FileAccess.Read, (FileShare)(FileShareRead | FileShareWrite), IntPtr.Zero, FileMode.Open, (FileAttributes)(FileAttributeNormal | FileFlagBackupSemantics), IntPtr.Zero);
         if ((int)handle == InvalidHandleValue) return;
+        // ReSharper disable once NotAccessedOutParameterVariable
         uint returnedBytes;
         DeviceIoControl(handle, IoctlStorageEjectMedia, IntPtr.Zero, 0, IntPtr.Zero, 0, out returnedBytes, IntPtr.Zero);
         CloseHandle(handle);
